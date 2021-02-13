@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <cstdlib>
+#include<unistd.h>  
 
 
 using namespace std;
@@ -29,7 +30,7 @@ int main(int argc, char const *argv[])
 
 void parseLine(string &input, vector<string> &commands)
 {
-    bool dbUse = false;
+    string dbUse = "";
     if(input.find("CREATE DATABASE") != -1)
     {
         string name = input.substr(16, input.length() - 17);
@@ -65,8 +66,8 @@ void parseLine(string &input, vector<string> &commands)
     else if(input.find("USE") != -1)
     {
         string name = input.substr(4, input.length() - 5);
-        
-        const int dirErr = system(("cd " + name).c_str());
+        dbUse = name;
+        const int dirErr = chdir(name.c_str());
 		if (dirErr == 0)
         {
             cout << "Using database " << name << endl;
