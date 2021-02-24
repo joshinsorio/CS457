@@ -1,22 +1,27 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
+#include <fstream>
 #include <cstdlib>
 #include <unistd.h>
 #include <algorithm> 
-#include "table.h"
 
 using namespace std;
 
-
 //Parses lines from the testing input file and operates accordingly
-void parseLine(string &input, vector<table> &tables, string &dbUse);
+void parseLine(string &input, string &dbUse);
+
+string getName(string line);
+string getTblName(string line);
+string getParse(string &input);
+string getData(string line);
+bool DoesFileExist (const string& name);
 
 int main(int argc, char const *argv[])
 {
     string input = "";
     vector<string> commands;
-    vector<table> tables;
     string dbUse = "";
 
     //Main loop
@@ -24,21 +29,22 @@ int main(int argc, char const *argv[])
     {
         cout << "> ";
         getline(cin, input);
-        transform(input.begin(), input.end(), input.begin(), ::toupper);
-        parseLine(input, tables, dbUse);
+        //transform(input.begin(), input.end(), input.begin(), ::toupper);
+        parseLine(input, dbUse);
     }
 
     return 0;
 }
 
-void parseLine(string &input, vector<table> &tables, string &dbUse)
+void parseLine(string &input, string &dbUse)
 {
+    string command = getParse(input);
 
-    if(input.find("CREATE DATABASE") != -1)
+    if(command.find("CREATE DATABASE") != -1)
     {
-        string name = input.substr(16, input.length() - 17);
-	
+        string name = getName(command);
         const int dirErr = system(("mkdir " + name).c_str());
+    
         if (dirErr == 0)
         {
             cout << "Database " << name << " created." << endl;
@@ -51,9 +57,9 @@ void parseLine(string &input, vector<table> &tables, string &dbUse)
 
     }
 
-    else if(input.find("DROP DATABASE") != -1)
+    else if(command.find("DROP DATABASE") != -1)
     {
-        string name = input.substr(14, input.length() - 15);
+        string name = getName(command);
         const int dirErr = system(("rmdir " + name).c_str());
 
 		if(dirErr == 0)
@@ -63,25 +69,29 @@ void parseLine(string &input, vector<table> &tables, string &dbUse)
 	
 		else
 		{
-            //FIX FOR LATERRRRRRRRRRRRRR
-            chdir("..");
-            if(system(("rmdir " + name).c_str()) == 0)
+            if(dbUse == "")
             {
-                cout << "Database " << name << " Deleted." << endl;
+                if(system(("rmdir " + name).c_str()) == 0)
+                {
+                    cout << "Database " << name << " Deleted." << endl;
+                }
+                
+                else
+                {
+                    cout << "!Failed to delete database " << name << " because it does not exist." << endl;
+                }
             }
             else
-            {
-                cout << "!Failed to delete database " << name << " because it does not exist." << endl;
-            }
+                cout << "!Failed to delete database " << name << " because you are not in the correct directory." << endl;
         }
     }
 
-    else if(input.find("USE") != -1)
+    else if(command.find("USE") != -1)
     {
-        string name = input.substr(4, input.length() - 5);
+        string name = getName(command);
         dbUse = name;
-        //const int dirErr = system(("cd " + name).c_str());
-		if (chdir(name.c_str()) == 0)
+
+		if((chdir(name.c_str()) == 0))
         {
             cout << "Using database " << name << endl;
         }
@@ -89,93 +99,155 @@ void parseLine(string &input, vector<table> &tables, string &dbUse)
         //Should the database not be found, go back a directory and search again
 		else
 		{
-            chdir("..");
-            if (chdir(name.c_str()) == 0)
-            {
-                cout << "Using database " << name << endl;
-            }
-	
-            else
+            if(dbUse == "")
             {
                 cout << "!Failed to use database " << name << " because it does not exist." << endl;
             }
-        }
-    }
 
-    else if(input.find("CREATE TABLE") != -1)
-    {
-        string name = input.substr(13, input.length() - 14);
-        //const int dirErr = system(("touch " + dbUse + "/" + name + ".txt").c_str());
-        //const int dirErr = system(("touch " + name + ".txt").c_str());
-        
-        //Determine if the table already exists
-        for(int i = 0; tables.size(); i++)
-        {
-            if(tables[i].getName() == name)
+            else
             {
-                cout << "!Failed to create table " << name << " because it does already exist." << endl;
-                break;
-            }
-        }
-		if (dbUse != "")
-        {
-            const int dirErr = system(("touch " + name + ".txt").c_str());
-            if(dirErr == 0)
-            {
-                string data = input.substr(input.find("(") + 1, input.length() - 3 - input.find("("));
-                table table(name, data);
-                tables.push_back(table);
-                cout << "Table " << name << " created." << endl;
-            }
-        }
-	
-		else
-		{
-            cout << "!Failed to create table " << name << " because you are not using a database." << endl;
-        }
-        
-    }
-
-    else if(input.find("DROP TABLE") != -1)
-    {
-        string name = input.substr(11, input.length() - 12);
-
-		if (dbUse != "")
-        {
-            const int dirErr = system(("rm " + name + ".txt").c_str());
-            if(dirErr == 0)
-            {
-                for(int i = 0; i < tables.size(); i++)
+                chdir("..");
+                if (chdir(name.c_str()) == 0)
                 {
-                    if (tables[i].getName() == name)
-                    {
-                        tables.erase(tables.begin() + i);
-                    }
-
+                    cout << "Using database " << name << endl;
                 }
+        
+                else
+                {
+                    cout << "!Failed to use database " << name << " because it does not exist." << endl;
+                }
+            }
+        }
+    }
+
+    else if(command.find("CREATE TABLE") != -1)
+    {
+        fstream file;
+        string name = getTblName(command);
+        string data = getData(command);
+
+
+        //Determine if the table already exists
+        if(DoesFileExist((name + ".txt").c_str()))
+        {
+            cout << "!Failed to create table " << name << " because it already exists." << endl;
+        }
+        
+        else
+        {
+            
+            if (dbUse != "")
+            {
+                file.open((name + ".txt").c_str(), ios::out);
+                file << data << " | ";
+                cout << "Table " << name << " created." << endl;
+                file.close();
+            }
+        
+            else
+            {
+                cout << "!Failed to create table " << name << " because there is no database in use." << endl;
+            }
+        }
+
+    }
+
+    else if(command.find("DROP TABLE") != -1)
+    {
+        fstream file;
+        string name = getTblName(command);
+
+        //Determine if the table already exists
+        if(!DoesFileExist((name + ".txt").c_str()))
+        {
+            cout << "!Failed to delete table " << name << " because the table does not exist." << endl;
+        }
+
+        else
+        {
+            if (dbUse != "")
+            {
+                const int dirErr = system(("rm " + name + ".txt").c_str());
                 cout << "Table " << name << " deleted." << endl;
             }
-        }
-	
-		else
-		{
-            cout << "!Failed to delete table " << name << " because you are not using a database." << endl;
-        }
-    }
-
-    else if(input.find("SELECT *") != -1)
-    {
-        string name = input.substr(14, input.length() - 15);
         
-
+            else
+            {
+                cout << "!Failed to delete table " << name << " because you are not using a database." << endl;
+            }
+        }
     }
 
-    else if(input.find("ALTER TABLE") != -1)
+    else if(command.find("SELECT * FROM") != -1)
     {
-        string name = input.substr(12, input.find("ADD") - 13);
+        fstream file;
+        string line;
+        string name = getName(command);
+
+        //Determine if the table does not exist
+        if(!DoesFileExist((name + ".txt").c_str()))
+        {
+            cout << "!Failed to query table " << name << " because the table does not exist." << endl;
+        }
+        
+        else
+        {
+            if (dbUse != "")
+            {
+                file.open((name + ".txt").c_str(), ios::in);
+                while(getline(file, line)) 
+                {
+                    cout << line << endl;
+                }
+                file.close();
+            }
+        
+            else
+            {
+                cout << "!Failed to delete table " << name << " because you are not using a database." << endl;
+            }
+        }
+        file.close();
+
     }
 
-    else if(input.find(".EXIT") != -1)
+    else if(command.find("ALTER TABLE") != -1)
+    {
+        fstream file;
+        string line;
+        string data = command.substr(command.find("ADD") + 4, command.length() - (command.find("ADD") + 4));
+        string name = getTblName(command);
+        
+        //Determine if the table does not exist
+        if(!DoesFileExist((name + ".txt").c_str()))
+        {
+            cout << "!Failed to alter table " << name << " because the table does not exist." << endl;
+        }
+
+        else
+        {
+            if (dbUse != "")
+            {
+                file.open((name + ".txt").c_str(), ios::app);
+                file << data << endl;
+                file.close();
+
+                file.open((name + ".txt").c_str(), ios::in);
+                while(getline(file, line)) 
+                {
+                    cout << line << endl;
+                }
+                file.close();
+            }
+        
+            else
+            {
+                cout << "!Failed to alter table " << name << " because you are not using a database." << endl;
+            }
+        }
+    }
+
+    else if(command.find(".EXIT") != -1)
     {
         cout << "Exiting now..." << endl;
     }
@@ -184,4 +256,53 @@ void parseLine(string &input, vector<table> &tables, string &dbUse)
     {
         cout << "!Failed to find a valid command."  << endl;
     }
+
+}
+
+string getData(string line)
+{
+	auto it = find(line.begin(), line.end(), '(');
+	line = string(it, line.end());
+	line = line.substr(1, line.size() - 2);
+	replace(line.begin(), line.end(), ',', '|');
+
+	return line;
+}
+
+string getName(string line)
+{
+	stringstream ss(line);
+	string token;
+	while (getline(ss, token, ' '))
+	{
+	}
+	return token;
+}
+
+string getTblName(string line)
+{
+	stringstream ss(line);
+	string token;
+	int i = 0;
+	while (getline(ss, token, ' ') && i < 2)
+	{
+		i++;
+	}
+	return token;
+}
+
+string getParse(string &input)
+{
+    stringstream ss(input);
+	string token;
+    getline(ss, token, ';');
+
+
+    return token;
+}
+
+//imported from https://stackoverflow.com/questions/46292764/check-for-file-existence-in-c-without-creating-file
+bool DoesFileExist (const string& name)
+{
+    return ( access( name.c_str(), F_OK ) != -1 );
 }
