@@ -1,3 +1,10 @@
+/*
+ * @file main.cpp
+ * @author Joshua Insorio (JoshuaInsorio@outlook.com)
+ * @date Feb 25, 2021
+ * @brief main program
+ */
+
 #include <iostream>
 #include <vector>
 #include <string>
