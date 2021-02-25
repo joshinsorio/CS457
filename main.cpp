@@ -135,11 +135,10 @@ void parseLine(string &input, string &dbUse)
         
         else
         {
-            
             if (dbUse != "")
             {
                 file.open((name + ".txt").c_str(), ios::out);
-                file << data << " | ";
+                file << data << ",";
                 cout << "Table " << name << " created." << endl;
                 file.close();
             }
@@ -197,6 +196,12 @@ void parseLine(string &input, string &dbUse)
                 file.open((name + ".txt").c_str(), ios::in);
                 while(getline(file, line)) 
                 {
+                    int pos = line.find(',');
+                    while(pos > 0)
+                    {
+                        line.replace(pos, 2, " | ");
+                        pos = line.find(',');
+                    }
                     cout << line << endl;
                 }
                 file.close();
@@ -229,15 +234,10 @@ void parseLine(string &input, string &dbUse)
             if (dbUse != "")
             {
                 file.open((name + ".txt").c_str(), ios::app);
-                file << data << endl;
+                file << data << ",";
                 file.close();
 
-                file.open((name + ".txt").c_str(), ios::in);
-                while(getline(file, line)) 
-                {
-                    cout << line << endl;
-                }
-                file.close();
+                cout << "Table " << name << " modified." << endl;
             }
         
             else
@@ -264,7 +264,6 @@ string getData(string line)
 	auto it = find(line.begin(), line.end(), '(');
 	line = string(it, line.end());
 	line = line.substr(1, line.size() - 2);
-	replace(line.begin(), line.end(), ',', '|');
 
 	return line;
 }
