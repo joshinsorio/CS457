@@ -151,7 +151,7 @@ void parseLine(string &input, string &dbUse)
             if (dbUse != "")
             {
                 file.open((name + ".txt").c_str(), ios::out);
-                file << data << ",";
+                file << data << ", ";
                 cout << "Table " << name << " created." << endl;
                 file.close();
             }
@@ -258,7 +258,7 @@ void parseLine(string &input, string &dbUse)
             if (dbUse != "")
             {
                 file.open((name + ".txt").c_str(), ios::app);
-                file << data << ",";
+                file << data << ", ";
                 file.close();
 
                 cout << "Table " << name << " modified." << endl;
@@ -274,7 +274,15 @@ void parseLine(string &input, string &dbUse)
     else if(command.find(".EXIT") != -1)
     {
         cout << "Exiting now..." << endl;
+        exit(0);
     }
+
+    else if((command.find("--") != -1) || (command.find("") != -1))
+    {
+        
+    }
+
+
 
     else
     {
