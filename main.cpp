@@ -24,12 +24,11 @@ string getName(string line);
 string getTblName(string line);
 string getParse(string &input);
 string getData(string line);
-bool DoesFileExist (const string& name);
+bool DoesFileExist (const string &name);
 
 int main(int argc, char const *argv[])
 {
     string input = "";
-    vector<string> commands;
     string dbUse = "";
 
     //Main loop
@@ -37,7 +36,6 @@ int main(int argc, char const *argv[])
     {
         cout << "> ";
         getline(cin, input);
-        //transform(input.begin(), input.end(), input.begin(), ::toupper);
         parseLine(input, dbUse);
     }
 
@@ -70,31 +68,22 @@ void parseLine(string &input, string &dbUse)
     {
         string name = getName(command);
 
-        //Delete directory and determine if there was an error
-		if(system(("rmdir " + name).c_str()) == 0)
+        //Checking if in the correct directory
+        if(dbUse == "")
         {
-            cout << "Database " << name << " Deleted." << endl;
-        }
-	
-		else
-		{
-            //Checking if in the correct directory
-            if(dbUse == "")
+            //Delete table and determine if there was an error
+            if(system(("rmdir " + name).c_str()) == 0)
             {
-                //Delete table and determine if there was an error
-                if(system(("rmdir " + name).c_str()) == 0)
-                {
-                    cout << "Database " << name << " Deleted." << endl;
-                }
-                
-                else
-                {
-                    cout << "!Failed to delete database " << name << " because it does not exist." << endl;
-                }
+                cout << "Database " << name << " Deleted." << endl;
             }
+            
             else
-                cout << "!Failed to delete database " << name << " because you are not in the correct directory." << endl;
+            {
+                cout << "!Failed to delete database " << name << " because it does not exist." << endl;
+            }
         }
+        else
+            cout << "!Failed to delete database " << name << " because you are not in the correct directory." << endl;
     }
 
     else if(command.find("USE") != -1)
@@ -150,6 +139,7 @@ void parseLine(string &input, string &dbUse)
             //Checking if in the correct directory
             if (dbUse != "")
             {
+                //Create a table with the name provided and insert the given data
                 file.open((name + ".txt").c_str(), ios::out);
                 file << data << ", ";
                 cout << "Table " << name << " created." << endl;
@@ -216,6 +206,7 @@ void parseLine(string &input, string &dbUse)
             //Checking if there is a database in use and in the correct directory
             if (dbUse != "")
             {
+                //Open table file and print contents, replacing "," with " | "
                 file.open((name + ".txt").c_str(), ios::in);
                 while(getline(file, line)) 
                 {
@@ -232,17 +223,17 @@ void parseLine(string &input, string &dbUse)
         
             else
             {
-                cout << "!Failed to delete table " << name << " because you are not using a database." << endl;
+                cout << "!Failed to select from table " << name << " because you are not using a database." << endl;
             }
         }
         file.close();
-
     }
 
     else if(command.find("ALTER TABLE") != -1)
     {
         fstream file;
         string line;
+        //Specific parsing for after the ADD keyword to retrieve the data
         string data = command.substr(command.find("ADD") + 4, command.length() - (command.find("ADD") + 4));
         string name = getTblName(command);
         
@@ -257,6 +248,7 @@ void parseLine(string &input, string &dbUse)
             //Checking if there is a database in use and in the correct directory
             if (dbUse != "")
             {
+                //Open the table with the name provided and append the given data
                 file.open((name + ".txt").c_str(), ios::app);
                 file << data << ", ";
                 file.close();
@@ -279,13 +271,12 @@ void parseLine(string &input, string &dbUse)
 
     else if((command.find("--") != -1) || (command.find("") != -1))
     {
-        
+        //Do nothing when coming across SQL comments and blank space
     }
-
-
 
     else
     {
+        //Default response to any unrecognized commands(was mainly used for manual testing)
         cout << "!Failed to find a valid command."  << endl;
     }
 
@@ -337,7 +328,7 @@ string getParse(string &input)
 }
 
 //Function to determine if a file exists
-bool DoesFileExist (const string& name)
+bool DoesFileExist (const string &name)
 {
     return (access(name.c_str(), F_OK ) != -1 );
 }
