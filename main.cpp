@@ -104,6 +104,7 @@ void parseLine(string &input, string &dbUse)
         //Should the database not be found, go back a directory and search again
 		else
 		{
+            //Checking if in the correct directory
             if(dbUse == "")
             {
                 cout << "!Failed to use database " << name << " because it does not exist." << endl;
