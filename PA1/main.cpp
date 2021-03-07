@@ -26,6 +26,7 @@ string getParse(string &input);
 string getData(string line);
 bool DoesFileExist (const string &name);
 
+
 int main(int argc, char const *argv[])
 {
     string input = "";
@@ -42,7 +43,17 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-//Main function in terms parsing the commands lines
+/*
+ *  Function:  parseLine 
+ *  --------------------
+ *  Parses the lines from the script/command line 
+ * 
+ *  input: Provides direct access to the original input string to parse
+ *  dbUse: Provides direct access to the string keeping track of the current directory
+ *
+ *  returns: Does not return anything, but rather determines the actions to correspond to the commands
+ * 
+ */
 void parseLine(string &input, string &dbUse)
 {
     string command = getParse(input);
@@ -282,7 +293,16 @@ void parseLine(string &input, string &dbUse)
 
 }
 
-//Function dedicated to returning the extra data and ignore the '(' from the parsed line
+/*
+ *  Function:  getData 
+ *  --------------------
+ *  Helper function dedicated to returning the extra data and ignore the '(' from the parsed line
+ * 
+ *  line: Provides a copy of command line string input to be parsed specifically for the data part
+ *
+ *  returns: String of the data to be written into the table txt file
+ * 
+ */
 string getData(string line)
 {
 	auto it = find(line.begin(), line.end(), '(');
@@ -292,7 +312,16 @@ string getData(string line)
 	return line;
 }
 
-//Function to retrieve the file/directory name from the parsed line
+/*
+ *  Function:  getName 
+ *  --------------------
+ *  Helper function to retrieve the file/directory name from the parsed line
+ * 
+ *  line: Provides a copy of command line string input to be parsed specifically for the name of a table/directory desired
+ *
+ *  returns: String of the name of the table/directory used for the fstream library
+ * 
+ */
 string getName(string line)
 {
 	stringstream ss(line);
@@ -303,7 +332,16 @@ string getName(string line)
 	return token;
 }
 
-//Function dedicated to retrieve the table name for creation from the parsed line
+/*
+ *  Function:  getTblName 
+ *  --------------------
+ *  Helper function dedicated to retrieve the table name for creation from the parsed line
+ * 
+ *  line: Provides a copy of command line string input to be parsed specifically for the name of a table
+ *
+ *  returns: String of the name of the table used for the fstream library
+ * 
+ */
 string getTblName(string line)
 {
 	stringstream ss(line);
@@ -317,7 +355,16 @@ string getTblName(string line)
 	return token;
 }
 
-//Function to retrieve the input line up until the ';'
+/*
+ *  Function:  getParse 
+ *  --------------------
+ *  Helper function to retrieve the input line up until the ';'
+ * 
+ *  input: Provides direct access to the original input string to parse
+ *
+ *  returns: String of the command without the ';' to determine the function and to be further parsed as needed
+ * 
+ */
 string getParse(string &input)
 {
     stringstream ss(input);
@@ -327,7 +374,16 @@ string getParse(string &input)
     return token;
 }
 
-//Function to determine if a file exists
+/*
+ *  Function:  DoesFileExist 
+ *  --------------------
+ *  Function to determine if a file exists
+ * 
+ *  name: Provides direct access to the original string containing the name of the file
+ *
+ *  returns: Boolean determining if the file exists in the current directory
+ * 
+ */
 bool DoesFileExist (const string &name)
 {
     return (access(name.c_str(), F_OK ) != -1 );
