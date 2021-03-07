@@ -384,7 +384,7 @@ string getParse(string &input)
  *  returns: Boolean determining if the file exists in the current directory
  * 
  */
-bool DoesFileExist (const string &name)
+bool DoesFileExist(const string &name)
 {
     return (access(name.c_str(), F_OK ) != -1 );
 }
