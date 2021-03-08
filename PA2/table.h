@@ -8,6 +8,22 @@
 #ifndef TABLE_H
 #define TABLE_H
 
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <vector>
+
+class table
+{
+    public:
+        table();
+        table();
+
+    private:
+        char product[20];
+        int price;
+        int id;
+}
 
 
 #endif 
