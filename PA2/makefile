@@ -2,7 +2,7 @@ CXX = g++
 CXX_FLAGS = -w -std=c++14
 
 TARGET = main
-HEADERS = 
+HEADERS = table.h
 SRCS = main.cpp 
 
 OBJECTS := $(patsubst %.cpp,%.o,$(SRCS))

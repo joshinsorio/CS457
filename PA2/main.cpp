@@ -13,11 +13,12 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <algorithm> 
+#include "table.h"
 
 using namespace std;
 
 //Parses lines from the testing input file and operates accordingly
-void parseLine(string &input, string &dbUse);
+void parseLine(string &input, string &dbUse, vector<table> &tempTable);
 
 //Functions to help assist the main line parser function to help parse the parsed commands
 string getName(string line);
@@ -26,18 +27,38 @@ string getParse(string &input);
 string getData(string line);
 bool DoesFileExist (const string &name);
 
+//Functions to properly manage(modify/update) tuples in the database
+void insertTemp(string name, vector<table> &tempTable);
+void saveTable(string name, vector<table> &tempTable);
+void rmReturn(string &input);
+string getSet(string line, int temp);
+
+
 
 int main(int argc, char const *argv[])
 {
     string input = "";
     string dbUse = "";
+    string appendInput = "";
+    vector<table> tempTable;
 
     //Main loop
     while(input != ".EXIT")
     {
         cout << "> ";
         getline(cin, input);
-        parseLine(input, dbUse);
+
+        //Keep reading input from terminal until ';', '.', "", or "--", then append to the end of the orginal input
+        while(input.find(';') == -1 && input.find('.') != 0 && input != "" && input.find("--") == -1)
+		{
+			getline(cin, appendInput);
+			rmReturn(input);
+			if (appendInput != "")
+			{
+				input += appendInput;
+			}
+		}
+        parseLine(input, dbUse, tempTable);
     }
 
     return 0;
@@ -54,7 +75,7 @@ int main(int argc, char const *argv[])
  *  returns: Does not return anything, but rather determines the actions to correspond to the commands
  * 
  */
-void parseLine(string &input, string &dbUse)
+void parseLine(string &input, string &dbUse, vector<table> &tempTable)
 {
     string command = getParse(input);
 
@@ -162,7 +183,6 @@ void parseLine(string &input, string &dbUse)
                 cout << "!Failed to create table " << name << " because there is no database in use." << endl;
             }
         }
-
     }
 
     else if(command.find("DROP TABLE") != -1)
@@ -274,6 +294,117 @@ void parseLine(string &input, string &dbUse)
         }
     }
 
+    else if(command.find("insert into") != -1)
+    {
+        fstream file;
+        string name = getTblName(command);
+        string data = getData(command);
+
+        //Determine if the table already exists
+        if(!DoesFileExist((name + ".txt").c_str()))
+        {
+            cout << "!Failed to create table " << name << " because it already exists." << endl;
+        }
+        
+        else
+        {
+            //Checking if in the correct directory
+            if (dbUse != "")
+            {
+                //Open the table with the name provided and append the given data
+                file.open((name + ".txt").c_str(), ios::app);
+                file << endl << data << endl;
+                cout << "1 new record inserted." << endl;
+                file.close();
+            }
+        
+            else
+            {
+                cout << "!Failed to create table " << name << " because there is no database in use." << endl;
+            }
+        }
+
+    }
+
+    else if(command.find("update") != -1)
+    {
+        int recordMCount = 0;
+        string name = getSet(command, 1);
+        string updateLocation = getSet(command, 3);
+        string update = getSet(command, 5);
+        string originalLocation = getSet(command, 7);
+        insertTemp(name, tempTable);
+
+        if(updateLocation == "price")
+        {
+            //Find the location of the tuple to be modified
+            for (int i = 0; i < tempTable.size(); i++)
+            {
+                if(tempTable[i].getProduct() == originalLocation)
+                {
+                    tempTable[i].setPrice(stof(update));
+                }
+            }
+            cout << ++recordMCount << " record(s) modified." << endl;
+        }
+        
+        else if(updateLocation == "name")
+        {
+            char temp[20];
+
+            //Find the location of the tuple to be modified
+            for (int i = 0; i < tempTable.size(); i++)
+            {
+                if(tempTable[i].getProduct() == originalLocation)
+                {
+                    tempTable[i].setProduct(strcpy(temp, update.c_str()));
+                }
+            }
+            cout << ++recordMCount << " record(s) modified." << endl;
+        }
+        saveTable(name, tempTable);
+    }
+
+    else if(command.find("delete") != -1)
+    {
+        int recordDCount = 0;
+        string name = getSet(command, 2);
+        string operand = getSet(command, 5);
+        string updateLocation = getSet(command, 6);
+
+        insertTemp(name, tempTable);
+
+        if(operand == "=")
+        {
+            //Find the location of the tuple to be modified
+            for (int i = 0; i < tempTable.size(); i++)
+            {
+                if(tempTable[i].getProduct() == updateLocation)
+                {
+                    tempTable.erase(tempTable.begin() + i);
+                }
+            }
+            cout << ++recordDCount << " record(s) deleted." << endl;
+        }
+
+        else if(operand == ">")
+        {
+            int location = 0;
+
+            //Find the location of the tuple to be modified
+            for (int i = 0; i < tempTable.size(); i++)
+            {
+                if(tempTable[i].getPrice() > stof(updateLocation))
+                {
+                    tempTable.erase(tempTable.begin() + location);
+                }
+            }
+            cout << ++recordDCount << " record(s) deleted." << endl;
+        }
+        saveTable(name, tempTable);
+
+    }
+
     else if(command.find(".EXIT") != -1)
     {
         cout << "Exiting now..." << endl;
@@ -356,6 +487,30 @@ string getTblName(string line)
 }
 
 /*
+ *  Function:  getSet 
+ *  --------------------
+ *  Helper function dedicated to retrieve the desired value to be modified
+ * 
+ *  line: Provides a copy of command line string input to be parsed specifically for the name of a table
+ *  temp: Provide the specific location of the command
+ *
+ *  returns: String of the name of the desired tuple to be modified
+ * 
+ */
+string getSet(string line, int temp)
+{
+    stringstream ss(line);
+	string token;
+	int i = 0;
+	while (getline(ss, token, ' ') && i < temp)
+	{
+		i++;
+	}
+
+	return token;
+}
+
+/*
  *  Function:  getParse 
  *  --------------------
  *  Helper function to retrieve the input line up until the ';'
@@ -372,6 +527,113 @@ string getParse(string &input)
     getline(ss, token, ';');
 
     return token;
+}
+
+/*
+ *  Function:  rmReturn 
+ *  --------------------
+ *  Helper function to remove the return lines from the input
+ * 
+ *  line: Provides a copy of command line string input to be parsed specifically for the name of a table
+ *
+ *  returns: String of the command without the return carriages
+ * 
+ */
+void rmReturn(string &input)
+{
+    string myString;
+
+    //Removing return carriage from the input
+	if (input.find('\r') == string::npos)
+	{
+		return;
+	}
+
+	else
+	{
+		for(int i = 0; i < input.size(); i++)
+		{
+			if (input[i] == '\r')
+			{
+				continue;
+			}
+			else
+			{
+				myString.push_back(input[i]);
+			}
+		}
+		input = myString;
+		return;
+	}
+
+}
+
+/*
+ *  Function:  insertTemp 
+ *  --------------------
+ *  Helper function to read the tuples from the database txt file and insert them into a temporary vector class for modification/updates
+ * 
+ *  name: name of the database txt file to be accessed with fstream
+ * 
+ *  tempTable: class table to hold the tuples
+ * 
+ */
+void insertTemp(string name, vector<table> &tempTable)
+{
+    fstream file;
+    //Determine if the table does not exist
+    if(!DoesFileExist((name + ".txt").c_str()))
+    {
+        cout << "!Failed to extract table " << name << " because the table does not exist." << endl;
+    }
+
+    else
+    {
+        //Open the table with the name provided
+        file.open((name + ".txt").c_str(), ios::in);
+
+        string token;
+        string array[3];
+        char product[20];
+        int i = 0;
+
+        //Read from the fstream file and insert into a temporary array
+        while(getline(file, token, ',') && i < 3)
+        {
+            array[i] = token;
+            i++;
+        }
+        file.close();
+        
+        //Convert string to int, char, and float to be inserted into table class for modifications
+        table table(stoi(array[0]), strcpy(product, array[1].c_str()), stof(array[2]));
+        tempTable.push_back(table);
+        //cout << tempTable[0].getID() << " " << tempTable[0].getProduct() << " " << tempTable[0].getPrice() << endl;
+        
+    }
+}
+
+/*
+ *  Function:  saveTable 
+ *  --------------------
+ *  Function to save the modified table into the table txt file
+ * 
+ *  name: Provides direct access to the original string containing the name of the file
+ * 
+ *  tempTable: class table that holds all the tuples
+ * 
+ */
+void saveTable(string name, vector<table> &tempTable)
+{
+    fstream file;
+
+    //Create a table with the name provided and insert the given data
+    file.open((name + ".txt").c_str(), ios::out);
+    for(int i = 0; i < tempTable.size(); i++)
+    {
+        file << tempTable[i].getID() << ", " << tempTable[i].getProduct() << ", " << tempTable[i].getPrice() << endl;
+    }
+    file.close();
 }
 
 /*

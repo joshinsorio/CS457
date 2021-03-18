@@ -12,18 +12,72 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <stdio.h>
+#include <cstring>
+
+using namespace std;
 
 class table
 {
     public:
-        table();
-        table();
+        table()
+        {
+            id = '\n';
+            product[0] = '\n';
+            price = '\n';
+        }
+
+        table(int pid, char pproduct[20], float pprice)
+        {
+            id = pid;
+            strcpy(product, pproduct);
+            price = pprice;
+        }
+
+        int getID()
+        {
+            return id;
+        }
+
+        char *getProduct()
+        {
+            return product;
+        }
+
+        float getPrice()
+        {
+            return price;
+        }
+
+        void setID(int pid)
+        {
+            id = pid;
+        }
+
+        void setProduct(char pproduct[20])
+        {
+            strcpy(product, pproduct);
+        }
+
+        void setPrice(float pprice)
+        {
+            price = pprice;
+        }
+
+        ~table()
+        {
+            id = '\n';
+            //fix the destructor later
+            //delete []product;
+            price = '\n';
+        }
+
 
     private:
-        char product[20];
-        int price;
         int id;
-}
+        char product[20];
+        float price;
+};
 
 
 #endif 
