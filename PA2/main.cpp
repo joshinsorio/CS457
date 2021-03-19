@@ -115,7 +115,9 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
             }
         }
         else
+        {
             cout << "!Failed to delete database " << name << " because you are not in the correct directory." << endl;
+        }
     }
 
     else if(command.find("USE") != -1)
@@ -173,7 +175,7 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
             {
                 //Create a table with the name provided and insert the given data
                 file.open((name + ".txt").c_str(), ios::out);
-                file << data << ", ";
+                file << data << endl;
                 cout << "Table " << name << " created." << endl;
                 file.close();
             }
@@ -220,7 +222,7 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         }
     }
 
-    else if(command.find("SELECT * FROM") != -1)
+    else if((command.find("SELECT * FROM") != -1) || (command.find("select * from") != -1))
     {
         fstream file;
         string line;
@@ -313,17 +315,16 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
             {
                 //Open the table with the name provided and append the given data
                 file.open((name + ".txt").c_str(), ios::app);
-                file << endl << data << endl;
+                file << data << endl;
                 cout << "1 new record inserted." << endl;
                 file.close();
             }
-        
+
             else
             {
                 cout << "!Failed to create table " << name << " because there is no database in use." << endl;
             }
         }
-
     }
 
     else if(command.find("update") != -1)
@@ -334,7 +335,7 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         string update = getSet(command, 5);
         string originalLocation = getSet(command, 7);
         insertTemp(name, tempTable);
-
+        
         if(updateLocation == "price")
         {
             //Find the location of the tuple to be modified
@@ -369,42 +370,129 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
     {
         int recordDCount = 0;
         string name = getSet(command, 2);
+        string update = getSet(command, 4);
         string operand = getSet(command, 5);
         string updateLocation = getSet(command, 6);
 
         insertTemp(name, tempTable);
 
-        if(operand == "=")
+        if(update == "name")
         {
-            //Find the location of the tuple to be modified
-            for (int i = 0; i < tempTable.size(); i++)
+            if(operand == "=")
             {
-                if(tempTable[i].getProduct() == updateLocation)
+                //Find the location of the tuple to be modified
+                for (int i = 0; i < tempTable.size(); i++)
                 {
-                    tempTable.erase(tempTable.begin() + i);
+                    if(tempTable[i].getProduct() == updateLocation)
+                    {
+                        tempTable.erase(tempTable.begin() + i);
+                    }
                 }
+                cout << ++recordDCount << " record(s) deleted." << endl;
             }
-            cout << ++recordDCount << " record(s) deleted." << endl;
+        }
+        
+        else if(update == "price")
+        {
+            if(operand == ">")
+            {
+                int location = 0;
+
+                //Find the location of the tuple to be modified
+                for (int i = 0; i < tempTable.size(); i++)
+                {
+                    if(tempTable[i].getPrice() > stof(updateLocation))
+                    {
+                        tempTable.erase(tempTable.begin() + location);
+                    }
+                }
+                cout << ++recordDCount << " record(s) deleted." << endl;
+            }
         }
 
-        else if(operand == ">")
-        {
-            int location = 0;
+        //SPACE FOR MORE CASES
 
-            //Find the location of the tuple to be modified
-            for (int i = 0; i < tempTable.size(); i++)
-            {
-                if(tempTable[i].getPrice() > stof(updateLocation))
-                {
-                    tempTable.erase(tempTable.begin() + location);
-                }
-            }
-            cout << ++recordDCount << " record(s) deleted." << endl;
-        }
         saveTable(name, tempTable);
 
     }
 
+    else if(command.find("select") != -1)
+    {
+        int selectionAdjust = 0;
+        string selection1 = getSet(command, 1);
+        string selection2 = "";
+        string operand = "";
+        string updateLocation = "";
+        string update = "";
+        string name = "";
+
+
+        //Check if there is another selection
+        if(selection1.find(",") != -1)
+        {
+            selection1.pop_back();
+            selection2 = getSet(command, 2);
+            selectionAdjust++;
+
+            //Determine file name after determining how many selection are desired
+            name = getSet(command, 3 + selectionAdjust);
+            update = getSet(command, 5 + selectionAdjust);
+            operand = getSet(command, 6 + selectionAdjust);
+            updateLocation = getSet(command, 7 + selectionAdjust);
+
+
+            //Determine if the table does not exist
+            if(!DoesFileExist((name + ".txt").c_str()))
+            {
+                cout << "!Failed to query table " << name << " because the table does not exist." << endl;
+            }
+            
+            else
+            {
+                //Checking if there is a database in use and in the correct directory
+                if (dbUse != "")
+                {
+                    insertTemp(name, tempTable);
+
+                    if(operand == "!=")
+                    {
+                        //Find the location of the tuple to be modified
+                        for (int i = 0; i < tempTable.size(); i++)
+                        {
+                            if(selection1 == "pid")
+                            {
+                                    if(selection2 == "name")
+                                    {
+                                        if(tempTable[i].getID() != stoi(updateLocation))
+                                        {
+                                            cout << tempTable[i].getID() << "|" << tempTable[i].getProduct() << endl;
+                                        }
+                                    }
+                            }
+
+                            else if (selection1 == "price")
+                            {
+                                if(tempTable[i].getID() != stoi(updateLocation))
+                                {
+                                    cout << tempTable[i].getID() << "|" << tempTable[i].getPrice() << endl;
+                                }
+                            }
+
+                            //SPOT FOR EXTRA CASES
+
+                        }
+                    }
+                }
+
+                else
+                {
+                    cout << "!Failed to select from table " << name << " because you are not using a database." << endl;
+                }
+
+            }
+        }
+    }
+    
     else if(command.find(".EXIT") != -1)
     {
         cout << "Exiting now..." << endl;
@@ -580,37 +668,44 @@ void rmReturn(string &input)
  */
 void insertTemp(string name, vector<table> &tempTable)
 {
+    cout << "PRETEST" << endl;
     fstream file;
-    //Determine if the table does not exist
-    if(!DoesFileExist((name + ".txt").c_str()))
+
+    //Open the table with the name provided
+    file.open((name + ".txt").c_str(), ios::in);
+
+    string token;
+    vector<string> array;
+    char product[20];
+    int i = 0;
+
+    //Read from the fstream file and insert into a temporary array
+    while(getline(file, token, '\t'))
     {
-        cout << "!Failed to extract table " << name << " because the table does not exist." << endl;
+        // if(token.find(",") != -1)
+        // {
+        //     token.pop_back();
+        // }
+        //array.push_back(token);
+        cout << token <<  "---" << endl;
     }
 
-    else
+    while(i < array.size())
     {
-        //Open the table with the name provided
-        file.open((name + ".txt").c_str(), ios::in);
-
-        string token;
-        string array[3];
-        char product[20];
-        int i = 0;
-
-        //Read from the fstream file and insert into a temporary array
-        while(getline(file, token, ',') && i < 3)
+        //cout << array[i] << " " << array[i+1] << " " <<  array[i+2] << endl;
+        if(i != 0)
         {
-            array[i] = token;
-            i++;
+            //Convert string to int, char, and float to be inserted into table class for modifications
+            table table(stoi(array[i]), strcpy(product, array[i+1].c_str()), stof(array[i+2]));
+            tempTable.push_back(table);
         }
-        file.close();
-        
-        //Convert string to int, char, and float to be inserted into table class for modifications
-        table table(stoi(array[0]), strcpy(product, array[1].c_str()), stof(array[2]));
-        tempTable.push_back(table);
-        //cout << tempTable[0].getID() << " " << tempTable[0].getProduct() << " " << tempTable[0].getPrice() << endl;
-        
+        i *= 3;
     }
+
+    cout << "FINISHED" << endl;
+    
+    
+    file.close();
 }
 
 /*
