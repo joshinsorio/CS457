@@ -34,6 +34,26 @@ class table
             price = pprice;
         }
 
+        table(string pid, string pproduct, string pprice)
+        {
+            holder1 = pid;
+            holder2 = pproduct;
+            holder3 = pprice;
+        }
+
+        string getHolder1()
+        {
+            return holder1;
+        }
+        string getHolder2()
+        {
+            return holder2;
+        }
+        string getHolder3()
+        {
+            return holder3;
+        }
+
         int getID()
         {
             return id;
@@ -77,6 +97,9 @@ class table
         int id;
         char product[20];
         float price;
+        string holder1;
+        string holder2;
+        string holder3;
 };
 
 

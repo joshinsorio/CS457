@@ -246,7 +246,7 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
                     int pos = line.find(',');
                     while(pos > 0)
                     {
-                        line.replace(pos, 2, " | ");
+                        line.replace(pos, 1, "|");
                         pos = line.find(',');
                     }
                     cout << line << endl;
@@ -302,6 +302,9 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         string name = getTblName(command);
         string data = getData(command);
 
+        //Simple command to remove whitespace from the original input
+        data.erase(remove_if(data.begin(), data.end(), ::isspace), data.end());
+
         //Determine if the table already exists
         if(!DoesFileExist((name + ".txt").c_str()))
         {
@@ -333,7 +336,7 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         string name = getSet(command, 1);
         string updateLocation = getSet(command, 3);
         string update = getSet(command, 5);
-        string originalLocation = getSet(command, 7);
+        string originalLocation = getSet(command, 9);
         insertTemp(name, tempTable);
         
         if(updateLocation == "price")
@@ -344,9 +347,10 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
                 if(tempTable[i].getProduct() == originalLocation)
                 {
                     tempTable[i].setPrice(stof(update));
+                    ++recordMCount;
                 }
             }
-            cout << ++recordMCount << " record(s) modified." << endl;
+            cout << recordMCount << " record(s) modified." << endl;
         }
         
         else if(updateLocation == "name")
@@ -359,9 +363,10 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
                 if(tempTable[i].getProduct() == originalLocation)
                 {
                     tempTable[i].setProduct(strcpy(temp, update.c_str()));
+                    ++recordMCount;
                 }
             }
-            cout << ++recordMCount << " record(s) modified." << endl;
+            cout << recordMCount << " record(s) modified." << endl;
         }
         saveTable(name, tempTable);
     }
@@ -386,9 +391,10 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
                     if(tempTable[i].getProduct() == updateLocation)
                     {
                         tempTable.erase(tempTable.begin() + i);
+                        ++recordDCount;
                     }
                 }
-                cout << ++recordDCount << " record(s) deleted." << endl;
+                cout << recordDCount << " record(s) deleted." << endl;
             }
         }
         
@@ -396,24 +402,22 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         {
             if(operand == ">")
             {
-                int location = 0;
-
                 //Find the location of the tuple to be modified
                 for (int i = 0; i < tempTable.size(); i++)
                 {
                     if(tempTable[i].getPrice() > stof(updateLocation))
                     {
-                        tempTable.erase(tempTable.begin() + location);
+                        tempTable.erase(tempTable.begin() + i);
+                        ++recordDCount;
                     }
                 }
-                cout << ++recordDCount << " record(s) deleted." << endl;
+                cout << recordDCount << " record(s) deleted." << endl;
             }
         }
 
         //SPACE FOR MORE CASES
 
         saveTable(name, tempTable);
-
     }
 
     else if(command.find("select") != -1)
@@ -425,7 +429,6 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         string updateLocation = "";
         string update = "";
         string name = "";
-
 
         //Check if there is another selection
         if(selection1.find(",") != -1)
@@ -439,7 +442,6 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
             update = getSet(command, 5 + selectionAdjust);
             operand = getSet(command, 6 + selectionAdjust);
             updateLocation = getSet(command, 7 + selectionAdjust);
-
 
             //Determine if the table does not exist
             if(!DoesFileExist((name + ".txt").c_str()))
@@ -457,26 +459,26 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
                     if(operand == "!=")
                     {
                         //Find the location of the tuple to be modified
-                        for (int i = 0; i < tempTable.size(); i++)
+                        for (int i = 1; i < tempTable.size(); i++)
                         {
-                            if(selection1 == "pid")
+                            if(update == "pid")
                             {
-                                    if(selection2 == "name")
-                                    {
+                                if(selection1 == "name")
+                                {
+                                    if(selection2 == "price")
+                                    {                                        
                                         if(tempTable[i].getID() != stoi(updateLocation))
                                         {
-                                            cout << tempTable[i].getID() << "|" << tempTable[i].getProduct() << endl;
+                                            cout << tempTable[0].getHolder2() << "|" << tempTable[0].getHolder3() << endl;
+                                            cout << tempTable[i].getProduct() << "|" << tempTable[i].getPrice() << endl;
                                         }
                                     }
-                            }
-
-                            else if (selection1 == "price")
-                            {
-                                if(tempTable[i].getID() != stoi(updateLocation))
-                                {
-                                    cout << tempTable[i].getID() << "|" << tempTable[i].getPrice() << endl;
                                 }
                             }
+
+                            //else if (update == "name")
+                            //{
+                            //}
 
                             //SPOT FOR EXTRA CASES
 
@@ -493,7 +495,7 @@ void parseLine(string &input, string &dbUse, vector<table> &tempTable)
         }
     }
     
-    else if(command.find(".EXIT") != -1)
+    else if((command.find(".EXIT") != -1) || (command.find(".exit") != -1))
     {
         cout << "Exiting now..." << endl;
         exit(0);
@@ -668,42 +670,50 @@ void rmReturn(string &input)
  */
 void insertTemp(string name, vector<table> &tempTable)
 {
-    cout << "PRETEST" << endl;
     fstream file;
 
     //Open the table with the name provided
     file.open((name + ".txt").c_str(), ios::in);
 
     string token;
+    string token2;
+    string temp;
     vector<string> array;
     char product[20];
     int i = 0;
+    int j = 0;
+
+    //Clear temptable
+    tempTable.clear();
 
     //Read from the fstream file and insert into a temporary array
-    while(getline(file, token, '\t'))
+    while(getline(file, token, '\n'))
     {
-        // if(token.find(",") != -1)
-        // {
-        //     token.pop_back();
-        // }
-        //array.push_back(token);
-        cout << token <<  "---" << endl;
+        stringstream ss(token);
+        while(getline(ss, token2, ','))
+        {
+            array.push_back(token2);
+            //cout << token2 <<  "---" << endl;
+        }
+        //token.erase(std::remove(token.begin(), token.end(), '\n'), token.end());
     }
 
     while(i < array.size())
     {
-        //cout << array[i] << " " << array[i+1] << " " <<  array[i+2] << endl;
+        //cout << array[i] << "," << array[i+1] << "," <<  array[i+2] << endl;
         if(i != 0)
         {
             //Convert string to int, char, and float to be inserted into table class for modifications
             table table(stoi(array[i]), strcpy(product, array[i+1].c_str()), stof(array[i+2]));
             tempTable.push_back(table);
         }
-        i *= 3;
+        else
+        {
+            table table(array[i], array[i+1], array[i+2]);
+            tempTable.push_back(table);
+        }
+        i += 3;
     }
-
-    cout << "FINISHED" << endl;
-    
     
     file.close();
 }
@@ -726,7 +736,14 @@ void saveTable(string name, vector<table> &tempTable)
     file.open((name + ".txt").c_str(), ios::out);
     for(int i = 0; i < tempTable.size(); i++)
     {
-        file << tempTable[i].getID() << ", " << tempTable[i].getProduct() << ", " << tempTable[i].getPrice() << endl;
+        if(i != 0)
+        {
+            file << tempTable[i].getID() << "," << tempTable[i].getProduct() << "," << tempTable[i].getPrice() << endl;
+        }
+        else
+        {
+            file << tempTable[i].getHolder1() << "," << tempTable[i].getHolder2() << "," << tempTable[i].getHolder3() << endl;
+        }
     }
     file.close();
 }
