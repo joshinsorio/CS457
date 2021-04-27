@@ -1,7 +1,7 @@
 /*
  * @file table.h
  * @author Joshua Insorio (JoshuaInsorio@outlook.com)
- * @date April 24, 2021
+ * @date April 6, 2021
  * @brief header file for the table class
  */
 
@@ -111,11 +111,6 @@ class table
         void setPrice(float pprice)
         {
             price = pprice;
-        }
-
-        void setEID(int pid)
-        {
-            employeeID = pid;
         }
 
         ~table()
