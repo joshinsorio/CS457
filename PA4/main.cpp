@@ -38,7 +38,7 @@ string getSet(string line, int temp);
 
 
     bool transactFlag = false;
-    char commitFlag = '0';
+    bool commitFlag = false;
     int errorFlag = 0;
     bool errorFlag2 = false;
     string Lname = "";
@@ -521,7 +521,7 @@ void parseLine(string &input, string &dbUse)
             {
                 errorFlag2 = true;
                 cout << "Error: Table " << name << " is locked!" << endl;
-                //Lline.push_back(command);
+                Lline.push_back(command);
                 fin.close();
             }
 
@@ -535,28 +535,6 @@ void parseLine(string &input, string &dbUse)
 				Lline.push_back(command);
             }
         }
-
-        //Update if commited
-        // if(commitFlag2 == '1')
-        // {
-        //     string updateLocation2 = getSet(Lline, 3);
-        //     string update2 = getSet(Lline, 5);
-        //     string originalLocation2 = getSet(Lline, 9);
-
-        //     if(updateLocation2 == "status")
-        //     {
-        //         //Find the location of the tuple to be modified
-        //         for (int i = 0; i < tempTable.size(); i++)
-        //         {
-        //             if(tempTable[i].getEID() == stoi(originalLocation2))
-        //             {
-        //                 tempTable[i].setID(stoi(update2));
-        //                 ++recordMCount;
-        //             }
-        //         }
-        //         cout << recordMCount << " record(s) modified." << endl;
-        //     }
-        // }
 
         if(updateLocation == "price")
             {
@@ -717,7 +695,11 @@ void parseLine(string &input, string &dbUse)
 
     else if(command.find("begin") != -1)
     {
+        fstream fout2;
         cout << "Transaction starts." << endl;
+        fout2.open("commit.txt", ios::out);
+        fout2 << false << endl;
+
         transactFlag = true;
     }
 
@@ -743,6 +725,8 @@ void parseLine(string &input, string &dbUse)
             fout2.open("commit.txt", ios::out);
             fout2 << true << endl;
             fout2.close();
+
+            system(("rmdir " + "inTrans.txt"));
             
             int recordMCount = 0;
             string updateLocation = getSet(Lline.back(), 3);
