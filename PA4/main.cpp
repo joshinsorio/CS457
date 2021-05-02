@@ -489,8 +489,10 @@ void parseLine(string &input, string &dbUse)
         }
     }
 
+    //Update command
     else if(command.find("update") != -1)
     {
+        //Intialize Variables
         int recordMCount = 0;
         string name = getSet(command, 1);
         string updateLocation = getSet(command, 3);
@@ -510,6 +512,7 @@ void parseLine(string &input, string &dbUse)
             fstream fout;
             string transTableName = "";
 
+            //Determine if there is an existing file in transaction
             fin.clear();
             fin.open("inTrans.txt", ios::in);
             fin >> transTableName;
@@ -519,12 +522,15 @@ void parseLine(string &input, string &dbUse)
 
             if(transTableName == tempname)
             {
+                //Update error flag to signify a locked table
                 errorFlag2 = true;
                 cout << "Error: Table " << name << " is locked!" << endl;
+                //Keep track of last input command
                 Lline.push_back(command);
                 fin.close();
             }
 
+            //Should there be no lock, save file name in inTrans.txt to enable transaction lock
             else
             {
                 fout.clear();
@@ -532,10 +538,12 @@ void parseLine(string &input, string &dbUse)
                 fout << name << endl;
                 fout.close();
                 Lname = name;
+                //Keep track of last input command
 				Lline.push_back(command);
             }
         }
 
+        //Update location cases, price
         if(updateLocation == "price")
             {
                 //Find the location of the tuple to be modified
@@ -549,7 +557,8 @@ void parseLine(string &input, string &dbUse)
                 }
                 cout << recordMCount << " record(s) modified." << endl;
             }
-            
+
+        //Update location cases, name
         else if(updateLocation == "name")
             {
                 char temp[20];
@@ -569,6 +578,7 @@ void parseLine(string &input, string &dbUse)
         saveTable(name, tempTable);
     }
 
+    //Delete command
     else if(command.find("delete") != -1)
     {
         int recordDCount = 0;
@@ -578,6 +588,7 @@ void parseLine(string &input, string &dbUse)
         string updateLocation = getSet(command, 6);
         vector<table> tempTable = insertTemp(name);
 
+        //delete location cases, name
         if(update == "name")
         {
             if(operand == "=")
@@ -595,6 +606,7 @@ void parseLine(string &input, string &dbUse)
             }
         }
         
+        //delete location cases, name
         else if(update == "price")
         {
             if(operand == ">")
@@ -617,8 +629,10 @@ void parseLine(string &input, string &dbUse)
         saveTable(name, tempTable);
     }
 
+    //Select command
     else if(command.find("select") != -1)
     {
+        //Initialize variables
         int selectionAdjust = 0;
         string selection1 = getSet(command, 1);
         string selection2 = "";
@@ -666,7 +680,8 @@ void parseLine(string &input, string &dbUse)
                                     if(selection2 == "price")
                                     {                                        
                                         if(tempTable[i].getID() != stoi(updateLocation))
-                                        {
+                                        {   
+                                            //Print to terminal, deisred output. Holder being the labels, and product/price being the values
                                             cout << tempTable[0].getHolder2() << "|" << tempTable[0].getHolder3() << endl;
                                             cout << tempTable[i].getProduct() << "|" << tempTable[i].getPrice() << endl;
                                         }
@@ -693,8 +708,10 @@ void parseLine(string &input, string &dbUse)
         }
     }
 
+    //Begin command
     else if(command.find("begin") != -1)
     {
+        //Start transaction and create commit.txt to keep track if it has been committed
         fstream fout2;
         cout << "Transaction starts." << endl;
         fout2.open("commit.txt", ios::out);
@@ -703,6 +720,7 @@ void parseLine(string &input, string &dbUse)
         transactFlag = true;
     }
 
+    //Commit command
     else if(command.find("commit") != -1)
     {
         if(errorFlag2 == true)
@@ -716,18 +734,16 @@ void parseLine(string &input, string &dbUse)
             cout << "Transaction commmited" << endl;
             transactFlag = false;
 
+            //Update commit file with boolean, allowing modifcation to update
             fstream fout2;
-            fout2.clear();
-            fout2.open((Lname + ".txt").c_str(), ios::app);
-            //fout2 << Lline << endl;
-            fout2.close();
-
             fout2.open("commit.txt", ios::out);
             fout2 << true << endl;
             fout2.close();
 
+            //Delete transaction, freeing file
             system(("rmdir " + "inTrans.txt"));
             
+            //Initialize variables for modification
             int recordMCount = 0;
             string updateLocation = getSet(Lline.back(), 3);
             string update = getSet(Lline.back(), 5);
@@ -735,6 +751,7 @@ void parseLine(string &input, string &dbUse)
             vector<table> tempTable = insertTemp("Flights");
             Lline.pop_back();
 
+            //Determine desired modification location and update values
             if(updateLocation == "status")
             {
                 //Find the location of the tuple to be modified
@@ -753,17 +770,20 @@ void parseLine(string &input, string &dbUse)
         
     }
     
+    //Exit command
     else if((command.find(".EXIT") != -1) || (command.find(".exit") != -1))
     {
         cout << "Exiting now..." << endl;
         exit(0);
     }
 
+    //Comments and null space ignore function
     else if((command.find("--") != -1) || (command.find("") != -1))
     {
         //Do nothing when coming across SQL comments and blank space
     }
 
+    //Default case if commands inputted are not recognized
     else
     {
         //Default response to any unrecognized commands(was mainly used for manual testing)
